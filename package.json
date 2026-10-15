@@ -1,0 +1,53 @@
+{
+  "name": "luna-cycle",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shared period, PMS and fertility tracker",
+  "author": "Luna",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "app": "npm run build && electron .",
+    "app:dev": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on tcp:5173 && cross-env ELECTRON_DEV=1 electron .\"",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "ios:add": "npm run build && cap add ios",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios"
+  },
+  "build": {
+    "appId": "com.luna.cycle",
+    "productName": "Luna",
+    "files": ["dist/**/*", "electron/**/*"],
+    "directories": { "output": "release", "buildResources": "build" },
+    "win": { "target": "nsis" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "mac": { "target": "dmg", "category": "public.app-category.healthcare-fitness" }
+  },
+  "//": "Everything is a devDependency because Vite bundles the app into dist/; this keeps node_modules out of the installer.",
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "firebase": "^13.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
+    "wait-on": "^9.5.1"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.3": true,
+    "electron-winstaller@5.4.0": true,
+    "protobufjs@7.6.6": true
+  }
+}

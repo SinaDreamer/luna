@@ -1,0 +1,6 @@
+{
+  "appId": "com.luna.cycle",
+  "appName": "Luna",
+  "webDir": "dist",
+  "ios": { "contentInset": "always" }
+}

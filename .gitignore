@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+.env
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/build/
+
+# Firebase keys
+luna-firebase-config.env
+*.env
+!.env.example

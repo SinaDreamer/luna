@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function coupleData(cid) { return get(/databases/$(database)/documents/couples/$(cid)).data; }
+    function isTracker(cid) { return signedIn() && coupleData(cid).trackerUid == request.auth.uid; }
+    function isMember(cid) {
+      return signedIn() && (coupleData(cid).trackerUid == request.auth.uid || coupleData(cid).partnerUid == request.auth.uid);
+    }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Invite codes: anyone signed in can look up a code they were given.
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isTracker(request.resource.data.coupleId);
+      allow delete: if signedIn()
+        && (resource.data.createdBy == request.auth.uid || coupleData(resource.data.coupleId).partnerUid == request.auth.uid);
+    }
+
+    match /couples/{cid} {
+      allow create: if signedIn() && request.resource.data.trackerUid == request.auth.uid;
+      allow read: if signedIn()
+        && (resource.data.trackerUid == request.auth.uid || resource.data.partnerUid == request.auth.uid);
+      allow delete: if signedIn() && resource.data.trackerUid == request.auth.uid;
+      allow update: if signedIn() && (
+        // She can change anything except who owns the couple.
+        (resource.data.trackerUid == request.auth.uid && request.resource.data.trackerUid == resource.data.trackerUid)
+        // The partner joins with a live invite code while no partner is linked...
+        || (resource.data.partnerUid == null
+            && request.resource.data.partnerUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partnerUid', 'partnerName'])
+            && resource.data.inviteCode != null
+            && exists(/databases/$(database)/documents/invites/$(resource.data.inviteCode)))
+        // ...and can leave again.
+        || (resource.data.partnerUid == request.auth.uid
+            && request.resource.data.partnerUid == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partnerUid', 'partnerName']))
+      );
+
+      // Raw day logs never leave her account.
+      match /days/{day} {
+        allow read, write: if isTracker(cid);
+      }
+
+      // The filtered prediction summary she shares.
+      match /shared/{docId} {
+        allow read: if isMember(cid);
+        allow write: if isTracker(cid);
+      }
+    }
+  }
+}
